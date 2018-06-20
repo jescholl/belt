@@ -1,0 +1,26 @@
+
+_tk_kubectl_latest_version() {
+  curl -Ls https://storage.googleapis.com/kubernetes-release/release/stable.txt
+}
+
+_tk_kubectl_install() {
+  local version=$1
+  local install_path=$2
+  curl -Lso ${install_path} https://storage.googleapis.com/kubernetes-release/release/${version}/bin/darwin/amd64/kubectl
+  chmod +x ${install_path}
+}
+
+kubectl() {
+  _tk_run_tool kubectl "$@"
+}
+
+# load completion
+if [ -n "$ZSH_VERSION" ]; then
+  _kubectl_lazy_completion() {
+    source <(kubectl completion zsh)
+    unset -f _kubectl_lazy_completion
+  }
+  compdef _kubectl_lazy_completion kubectl
+elif [ -n "$BASH_VERSION" ]; then
+  source <(kubectl completion bash)
+fi
