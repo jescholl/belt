@@ -1,3 +1,27 @@
+#!/usr/bin/env bash
+
+TOOLBELT_DIR=${TOOLBELT_DIR:-~/.belt}
+for tool in "${0%/*}/../share/toolbelt/*.sh"; do
+  TOOLS+=("$(basename -s .sh $tool)")
+done
+
+done
+
+# I will run this file to produce function definitions or source file lists
+#   source "$($0 init)
+
+
+
+for dir in "$PREFIX/opt/rubies" "$HOME/.rubies"; do
+  [[ -d "$dir" && -n "$(ls -A "$dir")" ]] && RUBIES+=("$dir"/*)
+done
+unset dir
+
+
+
+MODULE_DIR=$()
+#FIXME: left off here
+
 tool_name=$1; shift
 opts=($@)
 
@@ -26,6 +50,11 @@ while [[ $# -gt 0 ]]; do
       shift # past value
       ;;
     which)
+      SEARCHPATH="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    init)
       SEARCHPATH="$2"
       shift # past argument
       shift # past value
@@ -63,7 +92,7 @@ installed_versions() {
 
 tool_path() {
   local version=$1
-  echo ${TOOL_KEEPER_DIR}/${tool_name}/${version}
+  echo ${TOOLBELT_DIR}/${tool_name}/${version}
 }
 
 any_existing_version() {
@@ -77,7 +106,7 @@ tool_version() {
 
   if [ -z "$version" ]; then
     version=${version:-$(any_existing_version)} # use anything we have
-    version=${version:-$(${tool_name}_latest_version)} # we don't have anything, download the latest
+    version=${version:-$(latest_version)} # we don't have anything, download the latest
     [ -z "${version}" ] && echo $0: $tool_name: Unable to determine version >&2 && return 4
     #echo "# ${tool_name}: TK_${tool_name}_VERSION not set, using $version" >&2
   fi
@@ -93,8 +122,8 @@ tool_version_source() {
   [ -n "$version" ] && echo DEFAULT latest installed version; return 0
 
   # FIXME; I left off here
-  version=${version:-$(${tool_name}_latest_version)} # we don't have anything, download the latest
-  [ -z "${version}" ] && echo $0: $tool_name: Unable to determine version >&2 && return 4
+  version=${version:-$(latest_version)} # we don't have anything, download the latest
+  [ -z "${version}" ] && echo $0: ${tool_name}: Unable to determine version >&2 && return 4
 }
 
 run_tool() {
@@ -104,11 +133,16 @@ run_tool() {
   if [[ ! -f $version_path || ! -x $version_path ]]; then
     # tool isn't installed (correctly), install it
     mkdir -p $(dirname ${version_path})
-    ${tool_name}_install ${version} ${version_path}
+    install ${tool_name} ${version}
   fi
   $version_path ${opts[@]}
 }
 
+latest_version() {
+
+}
+
+# FIXME: this is broken
 source_lines() {
   for file in $some_dir/tk_*; do
     echo "source $file"
