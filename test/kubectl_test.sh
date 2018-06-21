@@ -11,13 +11,13 @@ function test_kubectl_function()
 {
   echo $(command -v kubectl) | grep '^/' > /dev/null
 
-  assertNotEquals "kubectl command starts with /" 1 $?
+  assertNotEquals "kubectl command starts with /" 0 $?
 }
 
 function test_kubectl_environment_version()
 {
   local TK_KUBECTL_VERSION="v1.10.3"
-  local client_version=$(kubectl version | kubectl_version_parse 'GitVersion' )
+  local client_version=$(kubectl version 2> /dev/null | kubectl_version_parse 'GitVersion' )
 
   assertEquals "version doesn't match ENV" $TK_KUBECTL_VERSION $client_version
 }
