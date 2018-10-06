@@ -16,7 +16,7 @@ done
 unset tool_name tool SOURCE
 
 belt() {
-  action=$1; shift
+  local action=$1; shift
 
   case "$action"; in
     module)
@@ -25,19 +25,17 @@ belt() {
       ;;
     *)
       _belt_$action "$@"
-
   esac
 
-  command -v _belt_$action > /dev/null
-  if [ "$?" -eq "0" ]; then
-    echo "executing function _belt_$action $@"
-    _belt_$action "$@"
-  elif [ -f "${BELT_MODULE_DIR}/${tool_name}.sh" ]; then
-    echo "executing script: ${BELT_MODULE_DIR}/${tool_name}.sh '${action}' '$@'"
-    "${BELT_MODULE_DIR}/${tool_name}.sh" "${action}" "$@"
-  else
-    echo "script does not exist: ${BELT_MODULE_DIR}/${tool_name}.sh"
-  fi
+  #if command -v _belt_$action > /dev/null; then
+  #  echo "executing function _belt_$action $@"
+  #  _belt_$action "$@"
+  #elif [ -f "${BELT_MODULE_DIR}/${tool_name}.sh" ]; then
+  #  echo "executing script: ${BELT_MODULE_DIR}/${tool_name}.sh '${action}' '$@'"
+  #  "${BELT_MODULE_DIR}/${tool_name}.sh" "${action}" "$@"
+  #else
+  #  echo "script does not exist: ${BELT_MODULE_DIR}/${tool_name}.sh"
+  #fi
 
 
   # FIXME: this could be better by minimizing the functions in the environment (just belt()), and running everything else through a shell script
@@ -55,6 +53,8 @@ Some useful commands are:
   exec      <tool> <version> [<args>]
   install   <tool> <version>
   use       <tool> <version>
+  uninstall <tool> [version]
+  upgrade   <tool>
   which     <tool> <version>
   versions  [tool]
 EOT
@@ -74,9 +74,16 @@ _belt_which() {
   echo "${BELT_DIR}/${tool_name}/${version}"
 }
 
+_belt_uninstall() {
+  local tool_name=$1
+  local version=$2
+
+  rm -rf belt "$(_belt_which "$tool_name" "$version")"
+}
+
 _belt_install() {
-  local tool_name=$1; shift
-  local version=$1; shift
+  local tool_name=$1
+  local version=${2:-$(belt module kubectl latest)}
 
   local os_type=${OS_TYPE:-$(uname | tr '[:upper:]' '[:lower:]')}
   local os_arch=${OS_ARCH:-$(uname -m)}
@@ -94,11 +101,11 @@ EOT
     return 1
   fi
 
-  local url=$(belt "$tool_name" url "$os_type" "$os_arch" "$version")
-  local install_path=$(belt which "$tool_name" "$version")
+  local url=$(belt module "$tool_name" url "$os_type" "$os_arch" "$version")
+  local install_path=$(_belt_which "$tool_name" "$version")
 
-  curl -Lsfo $install_path $url
-  if [ "$?" -eq "0" ]; then
+  if curl -Lsfo $install_path $url; then
+    echo installed to $install_path
     chmod +x $install_path
   else
     cat <<EOT
@@ -116,26 +123,26 @@ _belt_exec() {
 
   case "$version" in
     any)
-      version=$(belt version $tool_name | tail -n 1)
-      version=${version:-$(belt latest $tool_name)}
+      version=$(_belt_version $tool_name | tail -n 1)
+      version=${version:-$(belt module "$tool_name" latest)}
       ;;
     latest)
-      version=$(belt latest $tool_name)
-      belt use kubectl $version
+      version=$(belt module "$tool_name" latest)
+      _belt_use $tool_name $version
       ;;
   esac
 
   local tool_path=$(_belt_which $tool_name $version)
 
   if ! [ -f "$tool_path" ]; then
-    belt install "$tool_name" "$version"
+    _belt_install "$tool_name" "$version"
   fi
   $tool_path $@
 }
 
 _belt_versions() {
   for tool in $BELT_MODULE_DIR/*; do
-    tool_name=$(basename -s .sh $tool)
+    local tool_name=$(basename -s .sh $tool)
     echo $tool_name:
     local current_version=$(_belt_version $tool_name)
     for version in $(__belt_tool_versions $tool_name); do
@@ -148,9 +155,16 @@ _belt_versions() {
   done
 }
 
+_belt_upgrade() {
+  local tool_name=$1
+  local version="$(belt module "$tool_name" latest)"
+  echo "Installing $tool_name $version"
+  belt install "$tool_name" "$(belt module "$tool_name" latest)"
+}
+
 _belt_version() {
-  tool_name=$1
-  version=$(eval echo \$BELT_$(echo $tool_name | tr '[:lower:]' '[:upper:]')_VERSION)
+  local tool_name=$1
+  local version=$(eval echo \$BELT_$(echo $tool_name | tr '[:lower:]' '[:upper:]')_VERSION)
   version=${version:-$(__belt_tool_versions $tool_name | tail -n 1)}
   echo $version
 }
