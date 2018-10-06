@@ -45,6 +45,9 @@ test:
 	SHELL=`command -v bash` ./test/runner
 	SHELL=`command -v zsh`  ./test/runner
 
+style:
+	docker run --rm -v "$(shell pwd):/code" koalaman/shellcheck:stable $(shell find . -name '*.sh' | sed 's#^\.#/code#')
+
 tag:
 	git push origin master
 	git tag -s -m "Releasing $(VERSION)" v$(VERSION)
@@ -68,4 +71,4 @@ uninstall:
 	rm -rf $(DESTDIR)$(DOC_DIR)
 	rmdir $(DESTDIR)$(SHARE_DIR)
 
-.PHONY: build download sign verify clean test tag release rpm install uninstall all
+.PHONY: build download sign verify clean style test tag release rpm install uninstall all
