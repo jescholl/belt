@@ -1,11 +1,11 @@
-[[ -z "$SHUNIT2"     ]] && SHUNIT2=$(command -v shunit2)
-#[[ -n "$ZSH_VERSION" ]] && setopt shwordsplit
+[[ -n "$ZSH_VERSION" ]] && setopt shwordsplit
+
+SHUNIT2=${SHUNIT2:-$(command -v shunit2)}
 
 export PREFIX="$PWD/test"
 export HOME="$PREFIX/home"
-export PATH="$PWD/bin:$PATH"
 
-. ./share/tool_keeper/tool_keeper.sh
+. ./share/toolbelt/belt.sh
 
 setUp() { return; }
 tearDown() { return; }

@@ -38,10 +38,8 @@ verify: $(PKG) $(SIG)
 	gpg --verify $(SIG) $(PKG)
 
 clean:
+	rm -rf test/home
 	rm -f $(PKG) $(SIG)
-
-test/opt/rubies:
-	./test/setup
 
 test:
 	SHELL=`command -v bash` ./test/runner
