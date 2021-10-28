@@ -1,18 +1,19 @@
 #!/bin/bash
 
+name="vault"
+
 latest_version() {
-  curl -Ls https://storage.googleapis.com/kubernetes-release/release/stable.txt | sed 's/v\(.*\)/\1/'
+  remote_versions | head -n 1
 }
 
 remote_versions() {
-  echo "Not supported" >&2
+  curl -Ls "https://releases.hashicorp.com/${name}/" | grep "href=\"/${name}" | sed "s/^.*>${name}_\([0-9]*\.[0-9]*\.[0-9*]\).*$/\1/" | sort -Vru
 }
 
-
 _url() {
-  [ "${version:0:1}" == "v" ] || version="v${version}"
+  #[ "${version:0:1}" == "v" ] || version="v${version}"
 
-  echo "https://storage.googleapis.com/kubernetes-release/release/${version}/bin/${os_type}/${os_arch}/kubectl"
+  echo "https://releases.hashicorp.com/${name}/${version}/${name}_${version}_${os_type}_${os_arch}.zip"
 }
 
 install() {
@@ -21,10 +22,12 @@ install() {
   os_arch=$3
   install_path=$4
 
-  echo curl -Lsfo "$install_path" "$(_url)"
-  if curl -Lsfo "$install_path" "$(_url)"; then
+  tmpdir="$(mktemp -d)"
+  if (cd "$tmpdir" && curl -Lsfo "${name}.zip" "$(_url)" && unzip "${name}.zip" && mv "$name" "$install_path"); then
+    rm -rf "$tmpdir"
     chmod +x "$install_path"
   else
+    rm -rf "$tmpdir"
     cat <<EOT
 Unable to download
 URL: $(_url)
