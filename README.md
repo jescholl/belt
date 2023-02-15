@@ -1,3 +1,6 @@
+# ARCHIVED
+This project is no longer being maintained, check out [asdf](https://asdf-vm.com/) as an alternative.
+
 # Belt
 A single version manager for all your tools with one simple interface
 
